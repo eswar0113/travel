@@ -62,7 +62,7 @@ export default function CitySearchPage() {
       const response = await fetch('/api/cities/save')
       if (response.ok) {
         const saved = await response.json()
-        const savedIds = new Set(
+        const savedIds = new Set<string>(
           saved.map((city: any) => `${city.cityName},${city.country}`)
         )
         setSavedCityIds(savedIds)
@@ -229,7 +229,6 @@ export default function CitySearchPage() {
           </div>
         </DialogContent>
       </Dialog>
-        </div>
       </div>
     </div>
   )

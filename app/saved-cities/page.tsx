@@ -167,6 +167,7 @@ export default function SavedCitiesPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   )
