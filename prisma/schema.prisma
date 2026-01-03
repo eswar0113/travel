@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String
+  image         String?
+  language      String    @default("en")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isAdmin       Boolean   @default(false)
+  
+  trips         Trip[]
+  savedCities   SavedCity[]
+  
+  @@map("users")
+}
+
+model Trip {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  coverImage  String?
+  budgetLimit Float?    @default(0) // Total budget for the trip
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  stops       Stop[]
+  expenses    Expense[]
+  sharedTrips SharedTrip[]
+  packingList PackingList?
+  
+  @@index([userId])
+  @@map("trips")
+}
+
+model Stop {
+  id          String    @id @default(cuid())
+  cityName    String
+  country     String
+  startDate   DateTime
+  endDate     DateTime
+  order       Int
+  notes       String?
+  
+  tripId      String
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  activities  Activity[]
+  
+  @@index([tripId])
+  @@map("stops")
+}
+
+model Activity {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  category    String    // sightseeing, food, adventure, culture, relaxation, etc.
+  date        DateTime
+  startTime   String?
+  endTime     String?
+  duration    Int?      // in minutes
+  cost        Float     @default(0)
+  location    String?
+  imageUrl    String?
+  bookingUrl  String?
+  notes       String?
+  order       Int       @default(0)
+  
+  stopId      String
+  stop        Stop      @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  
+  @@index([stopId])
+  @@index([date])
+  @@map("activities")
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  category    String    // transport, accommodation, food, activities, shopping, other
+  description String
+  amount      Float
+  currency    String    @default("USD")
+  date        DateTime
+  notes       String?
+  
+  tripId      String
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  @@index([tripId])
+  @@index([category])
+  @@map("expenses")
+}
+
+model SharedTrip {
+  id          String    @id @default(cuid())
+  shareId     String    @unique @default(cuid()) // Used for the public share link
+  isPublic    Boolean   @default(true)
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  
+  tripId      String    @unique
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  @@index([shareId])
+  @@index([tripId])
+  @@map("shared_trips")
+}
+
+model SavedCity {
+  id          String    @id @default(cuid())
+  cityName    String
+  country     String
+  notes       String?
+  createdAt   DateTime  @default(now())
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, cityName, country])
+  @@index([userId])
+  @@map("saved_cities")
+}
+
+model City {
+  id          String    @id @default(cuid())
+  name        String
+  country     String
+  region      String?
+  description String?
+  imageUrl    String?
+  costIndex   Float     @default(50) // 0-100, relative cost indicator
+  popularity  Int       @default(0)
+  
+  @@unique([name, country])
+  @@map("cities")
+}
+
+model ActivityTemplate {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  estimatedCost Float   @default(0)
+  estimatedDuration Int? // in minutes
+  imageUrl    String?
+  popularity  Int       @default(0)
+  cityName    String?
+  country     String?
+  
+  @@index([category])
+  @@index([cityName])
+  @@map("activity_templates")
+}
+
+model PackingList {
+  id          String    @id @default(cuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  tripId      String    @unique
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  
+  items       PackingItem[]
+  
+  @@map("packing_lists")
+}
+
+model PackingItem {
+  id          String    @id @default(cuid())
+  item        String
+  category    String
+  checked     Boolean   @default(false)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  
+  packingListId String
+  packingList   PackingList @relation(fields: [packingListId], references: [id], onDelete: Cascade)
+  
+  @@index([packingListId])
+  @@map("packing_items")
+}
+
